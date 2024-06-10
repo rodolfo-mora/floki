@@ -36,6 +36,10 @@ func (f Floki) RegisterUser(user string, groups []string) {
 	f.Store.Save(user, groups)
 }
 
+func (f Floki) Start() {
+	f.registerRoutes()
+}
+
 func (f Floki) registerRoutes() {
 	http.HandleFunc("/", f.Handler)
 	if err := http.ListenAndServe(fmt.Sprintf(":%s", f.Port), nil); err != nil {
