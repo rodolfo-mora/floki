@@ -70,6 +70,7 @@ func (f Floki) UpdateHeaders(r *http.Request, u *url.URL) error {
 	(*r).Host = u.Host
 	(*r).Header.Set("X-Forwarded-Host", u.Host)
 	tenants, err := f.GetTenants(r.Header.Get("X-Grafana-User"))
+	log.Printf("TENANTS %s", tenants)
 	if err != nil {
 		return err
 	}
