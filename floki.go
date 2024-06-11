@@ -91,7 +91,9 @@ func (f Floki) queryTenantAPI(group string) (string, error) {
 		return "", err
 	}
 
-	log.Printf("Body size: %v", len(body))
+	if len(body) == 2 {
+		return "", nil
+	}
 
 	return string(body), nil
 
