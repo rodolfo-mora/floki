@@ -19,7 +19,7 @@ type Floki struct {
 	LokiServer string
 	Port       string
 	APIUrl     string
-	Store      MemoryStore
+	Store      *MemoryStore
 }
 
 func NewFloki(url string, port string, apiurl string) Floki {
