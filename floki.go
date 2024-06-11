@@ -101,7 +101,9 @@ func (f Floki) GetTenants(user string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		tenants = append(tenants, tenant)
+		if tenant != "" {
+			tenants = append(tenants, tenant)
+		}
 	}
 	return strings.Join(tenants, "|"), nil
 }
