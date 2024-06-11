@@ -104,6 +104,7 @@ func (f Floki) GetTenants(user string) (string, error) {
 			return "", err
 		}
 		if tenant == "" {
+			log.Println("Empty tenant")
 			continue
 		}
 		tenants = append(tenants, tenant)
