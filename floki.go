@@ -80,6 +80,8 @@ func (f Floki) UpdateHeaders(r *http.Request, u *url.URL) error {
 
 func (f Floki) queryTenantAPI(group string) (string, error) {
 	log.Println(f.APIUrl + "?groups=" + group)
+	group = strings.Replace(group, " ", "%20", -1)
+
 	res, err := http.Get(f.APIUrl + "?groups=" + group)
 	if err != nil {
 		return "", err
