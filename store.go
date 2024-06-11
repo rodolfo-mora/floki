@@ -7,7 +7,9 @@ type MemoryStore struct {
 }
 
 func NewMemoryStore() *MemoryStore {
-	return &MemoryStore{}
+	return &MemoryStore{
+		Users: map[string]User{},
+	}
 }
 
 func (m *MemoryStore) UserExists(user string) bool {
@@ -20,6 +22,7 @@ func (m *MemoryStore) Save(user string, groups []string) error {
 
 	mux.Lock()
 	defer mux.Unlock()
+
 	m.Users[user] = User{Email: user, SSOGroups: groups}
 	return nil
 }
