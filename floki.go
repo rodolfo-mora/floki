@@ -70,16 +70,16 @@ func (f Floki) UpdateHeaders(r *http.Request, u *url.URL) error {
 	(*r).Host = u.Host
 	(*r).Header.Set("X-Forwarded-Host", u.Host)
 	tenants, err := f.GetTenants(r.Header.Get("X-Grafana-User"))
-	log.Printf("TENANTS %s", tenants)
+
 	if err != nil {
 		return err
 	}
 	(*r).Header.Set("X-Scope-OrgID", tenants)
+	log.Printf("HEADER %s", (*r).Header.Get("X-Scope-OrgID"))
 	return nil
 }
 
 func (f Floki) queryTenantAPI(group string) (string, error) {
-	log.Println(f.APIUrl + "?groups=" + group)
 	group = strings.Replace(group, " ", "%20", -1)
 
 	res, err := http.Get(f.APIUrl + "?groups=" + group)
@@ -108,15 +108,12 @@ func (f Floki) GetTenants(user string) (string, error) {
 			return "", err
 		}
 
-		log.Printf("Empty tenant: %d", len(tenant))
 		if tenant == "" {
-			log.Println("Empty tenant")
 			continue
 		}
 		tenants = append(tenants, tenant)
 	}
 	if len(tenants) > 0 {
-		log.Printf("TENANTS %s", tenants)
 		return strings.Join(tenants, "|"), nil
 	}
 	return "", nil
