@@ -103,10 +103,10 @@ func (f Floki) GetTenants(user string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-
-		if tenant != "" {
-			tenants = append(tenants, tenant)
+		if tenant == "" {
+			continue
 		}
+		tenants = append(tenants, tenant)
 	}
 	if len(tenants) > 0 {
 		log.Printf("TENANTS %s", tenants)
