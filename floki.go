@@ -24,7 +24,7 @@ type Floki struct {
 
 func NewFloki(url string, port string, apiurl string) Floki {
 	log.Printf("Proxying requests for Loki %s", url)
-	log.Printf("Configurations: %v, %v %v", url, port, apiurl)
+
 	return Floki{
 		LokiServer: url,
 		Port:       port,
@@ -90,6 +90,8 @@ func (f Floki) queryTenantAPI(group string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	log.Printf("Body size: %v", len(body))
 
 	return string(body), nil
 
