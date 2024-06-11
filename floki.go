@@ -79,7 +79,7 @@ func (f Floki) UpdateHeaders(r *http.Request, u *url.URL) error {
 }
 
 func (f Floki) queryTenantAPI(group string) (string, error) {
-	res, err := http.Get(f.APIUrl + "?group=" + group)
+	res, err := http.Get(f.APIUrl + "?groups=" + group)
 	if err != nil {
 		return "", err
 	}
