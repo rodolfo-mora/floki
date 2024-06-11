@@ -108,9 +108,7 @@ func (f Floki) GetTenants(user string) (string, error) {
 			return "", err
 		}
 
-		if tenant == "" {
-			continue
-		}
+		tenant = strings.Replace(tenant, "\"", "", -1)
 		tenants = append(tenants, tenant)
 	}
 	if len(tenants) > 0 {
