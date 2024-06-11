@@ -103,6 +103,8 @@ func (f Floki) GetTenants(user string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+
+		log.Printf("Empty tenant: %s", tenant)
 		if tenant == "" {
 			log.Println("Empty tenant")
 			continue
