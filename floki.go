@@ -75,7 +75,6 @@ func (f Floki) UpdateHeaders(r *http.Request, u *url.URL) error {
 		return err
 	}
 	(*r).Header.Set("X-Scope-OrgID", tenants)
-	log.Printf("HEADER %s", (*r).Header.Get("X-Scope-OrgID"))
 	return nil
 }
 
@@ -110,7 +109,6 @@ func (f Floki) GetTenants(user string) (string, error) {
 
 		tenant = strings.Replace(tenant, "\"", "", -1)
 		if tenant == "" {
-			log.Println("Found empty tenant")
 			continue
 		}
 
