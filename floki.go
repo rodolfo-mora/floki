@@ -20,6 +20,7 @@ type Floki struct {
 	Port       string
 	APIUrl     string
 	Store      *MemoryStore
+	Config     ConfigManager
 }
 
 func NewFloki(url string, port string, apiurl string) Floki {
@@ -39,6 +40,10 @@ func (f Floki) RegisterUser(user string, groups []string) {
 
 func (f Floki) Start() {
 	f.registerRoutes()
+}
+
+func (f Floki) UpdarteConfig() {
+
 }
 
 func (f Floki) registerRoutes() {
