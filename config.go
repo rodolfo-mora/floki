@@ -2,6 +2,7 @@ package floki
 
 import (
 	"encoding/hex"
+	"errors"
 	"log"
 	"os"
 	"sync"
@@ -10,31 +11,35 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// type Tenant struct {
-// 	Group map[string][]string
-// }
-
-// type YAMLConfig struct {
-// 	Tenants Tenant `yaml:"tenants"`
-// }
-
 type ConfigManager struct {
 	tenantFile    string
 	trackFilePath string
-	config        *map[string]interface{}
+	tenants       *map[string]interface{}
 }
 
 func NewConfig() *ConfigManager {
-	var conf map[string]interface{}
-	return &ConfigManager{
+	c := ConfigManager{
 		tenantFile:    "/opt/proxy/conf/tenant.yaml",
 		trackFilePath: "/opt/proxy/track",
-		config:        &conf,
 	}
+
+	tenants, err := c.configFromFile(c.tenantFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c.tenants = &tenants
+	return &c
+}
+
+func (c *ConfigManager) Start() {
+	var done chan bool
+	go c.ConfigWatcher(done)
+	<-done
 }
 
 func (c ConfigManager) configFromFile(path string) (map[string]interface{}, error) {
-	f, err := ReadFile(path)
+	f, err := readFile(path)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -49,25 +54,6 @@ func (c ConfigManager) configFromFile(path string) (map[string]interface{}, erro
 
 	return conf, nil
 }
-
-// if groups, exists := conf["tenants"].(map[interface{}]interface{}); exists {
-// 	for group := range groups {
-// 		if group == "children" {
-// 			fmt.Printf("Map: %v", groups[group])
-// 		} else if group == "Share_Grant_Email_Group" {
-// 			fmt.Println("GROUP")
-// 		}
-// 		switch groups[group].(type) {
-// 		default:
-// 			for _, val := range groups[group].([]interface{}) {
-// 				fmt.Println(val)
-// 			}
-// 		case map[interface{}]interface{}:
-// 			// continue
-// 			fmt.Println(groups[group])
-// 		}
-// 	}
-// }
 
 func (c *ConfigManager) ConfigWatcher(done chan bool) {
 	ticker := time.NewTicker(500 * time.Millisecond)
@@ -96,20 +82,28 @@ func (c *ConfigManager) updateConfig() {
 		return
 	}
 
-	(*c).config = nil
-	(*c).config = &conf
+	(*c).tenants = nil
+	(*c).tenants = &conf
 }
 
 func (c *ConfigManager) configUpdated() bool {
-	f, err := ReadFile(c.tenantFile)
+	f, err := readFile(c.tenantFile)
 	if err != nil {
 		log.Println(err)
 		return false
 	}
 
 	sig := genSignature(f)
+	/*
+	  If trackfile doesn't exist this might be our first time
+	  executing. We store the signature and return false.
+	*/
+	if !c.trackFileExists() {
+		storeSignature(c.trackFilePath, []byte(sig))
+		return false
+	}
 
-	t, err := ReadFile(c.trackFilePath)
+	t, err := readFile(c.trackFilePath)
 	if err != nil {
 		log.Println(err)
 		return false
@@ -123,7 +117,15 @@ func (c *ConfigManager) configUpdated() bool {
 	return false
 }
 
-func ReadFile(path string) ([]byte, error) {
+func (c *ConfigManager) trackFileExists() bool {
+	if _, err := os.Stat(c.trackFilePath); errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+
+	return true
+}
+
+func readFile(path string) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
