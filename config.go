@@ -2,54 +2,64 @@ package floki
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	jsonyaml "github.com/ghodss/yaml"
 )
+
+type JSONConfig struct {
+	Tenants map[string][]string `json:"tenants"`
+}
 
 type ConfigManager struct {
 	tenantFile    string
 	trackFilePath string
-	tenants       *map[string]interface{}
+	tenantConfig  JSONConfig
 }
 
-func NewConfig() *ConfigManager {
-	c := ConfigManager{
+func NewTenantConfig() *ConfigManager {
+	cm := ConfigManager{
 		tenantFile:    "/opt/proxy/conf/tenant.yaml",
 		trackFilePath: "/opt/proxy/track",
 	}
 
-	tenants, err := c.configFromFile(c.tenantFile)
+	tenants, err := cm.configFromFile(cm.tenantFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	c.tenants = &tenants
-	return &c
-}
-
-func (c *ConfigManager) Start() {
+	cm.tenantConfig = tenants
 	var done chan bool
-	go c.ConfigWatcher(done)
+	go cm.ConfigWatcher(done)
 	<-done
+	return &cm
 }
 
-func (c ConfigManager) configFromFile(path string) (map[string]interface{}, error) {
+/*
+Description
+*/
+func (c ConfigManager) configFromFile(path string) (JSONConfig, error) {
+	var conf JSONConfig
+
 	f, err := readFile(path)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return conf, err
 	}
 
-	conf := make(map[string]interface{})
-	err = yaml.Unmarshal(f, &conf)
+	yconf, err := jsonyaml.YAMLToJSON(f)
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return conf, err
+	}
+
+	err = json.Unmarshal(yconf, &conf)
+	if err != nil {
+		return conf, err
 	}
 
 	return conf, nil
@@ -82,8 +92,8 @@ func (c *ConfigManager) updateConfig() {
 		return
 	}
 
-	(*c).tenants = nil
-	(*c).tenants = &conf
+	(*c).tenantConfig = JSONConfig{}
+	(*c).tenantConfig = conf
 }
 
 func (c *ConfigManager) configUpdated() bool {
@@ -123,6 +133,16 @@ func (c *ConfigManager) trackFileExists() bool {
 	}
 
 	return true
+}
+
+func (c *ConfigManager) getTenants(groups ...string) (string, error) {
+	var tenants []string
+
+	for _, group := range groups {
+		tenants = append(tenants, strings.Join(c.tenantConfig.Tenants[group], "|"))
+	}
+
+	return strings.Join(tenants, "|"), nil
 }
 
 func readFile(path string) ([]byte, error) {

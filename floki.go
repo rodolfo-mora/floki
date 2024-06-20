@@ -2,12 +2,10 @@ package floki
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strings"
 )
 
 type User struct {
@@ -20,7 +18,7 @@ type Floki struct {
 	Port       string
 	APIUrl     string
 	Store      *MemoryStore
-	Config     ConfigManager
+	Config     *ConfigManager
 }
 
 func NewFloki(url string, port string, apiurl string) Floki {
@@ -31,6 +29,7 @@ func NewFloki(url string, port string, apiurl string) Floki {
 		Port:       port,
 		APIUrl:     apiurl,
 		Store:      NewMemoryStore(),
+		Config:     NewTenantConfig(),
 	}
 }
 
@@ -48,7 +47,8 @@ func (f Floki) UpdarteConfig() {
 
 func (f Floki) registerRoutes() {
 	http.HandleFunc("/", f.Handler)
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", f.Port), nil); err != nil {
+	addr := fmt.Sprintf(":%s", f.Port)
+	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -58,12 +58,12 @@ func (f Floki) Handler(w http.ResponseWriter, r *http.Request) {
 
 	reverseProxy := httputil.NewSingleHostReverseProxy(lokiUrl)
 	if r.Header.Get("X-Grafana-User") == "" {
-		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		Unauthorized(w)
 		return
 	}
 	err := f.UpdateHeaders(r, lokiUrl)
 	if err != nil {
-		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+		Unauthorized(w)
 		return
 	}
 	reverseProxy.ServeHTTP(w, r)
@@ -74,8 +74,8 @@ func (f Floki) UpdateHeaders(r *http.Request, u *url.URL) error {
 	(*r).URL.Host = u.Host
 	(*r).Host = u.Host
 	(*r).Header.Set("X-Forwarded-Host", u.Host)
-	tenants, err := f.GetTenants(r.Header.Get("X-Grafana-User"))
 
+	tenants, err := f.GetTenants(r.Header.Get("X-Grafana-User"))
 	if err != nil {
 		return err
 	}
@@ -83,44 +83,13 @@ func (f Floki) UpdateHeaders(r *http.Request, u *url.URL) error {
 	return nil
 }
 
-func (f Floki) queryTenantAPI(group string) (string, error) {
-	group = strings.Replace(group, " ", "%20", -1)
-
-	res, err := http.Get(f.APIUrl + "?groups=" + group)
-	if err != nil {
-		return "", err
-	}
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return "", err
-	}
-
-	if len(body) == 2 {
-		return "", nil
-	}
-
-	return string(body), nil
-
+func (f Floki) GetTenants(user string) (string, error) {
+	groups := f.Store.GetSSOGroups(user)
+	return f.Config.getTenants(groups...)
 }
 
-func (f Floki) GetTenants(user string) (string, error) {
-	var tenants []string
-	groups := f.Store.GetSSOGroups(user)
-	for _, group := range groups {
-		tenant, err := f.queryTenantAPI(group)
-		if err != nil {
-			return "", err
-		}
-
-		tenant = strings.Replace(tenant, "\"", "", -1)
-		if tenant == "" {
-			continue
-		}
-
-		tenants = append(tenants, tenant)
-	}
-	if len(tenants) > 0 {
-		return strings.Join(tenants, "|"), nil
-	}
-	return "", nil
+func Unauthorized(w http.ResponseWriter) {
+	err := http.StatusText(http.StatusUnauthorized)
+	code := http.StatusUnauthorized
+	http.Error(w, err, code)
 }
