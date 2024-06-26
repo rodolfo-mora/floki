@@ -18,15 +18,17 @@ type JSONConfig struct {
 }
 
 type ConfigManager struct {
-	tenantFile    string
-	trackFilePath string
-	tenantConfig  JSONConfig
+	exporterEnabled bool
+	tenantFile      string
+	trackFilePath   string
+	tenantConfig    JSONConfig
 }
 
 func NewTenantConfig() *ConfigManager {
 	cm := ConfigManager{
-		tenantFile:    "/opt/proxy/conf/tenant.yaml",
-		trackFilePath: "/opt/proxy/track",
+		exporterEnabled: true,
+		tenantFile:      "/opt/proxy/conf/tenant.yaml",
+		trackFilePath:   "/opt/proxy/track",
 	}
 
 	tenants, err := cm.configFromFile(cm.tenantFile)
