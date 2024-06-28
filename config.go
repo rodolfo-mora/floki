@@ -1,7 +1,7 @@
 package floki
 
 import (
-	"encoding/hex"
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"log"
@@ -24,11 +24,11 @@ type ConfigManager struct {
 	tenantConfig    JSONConfig
 }
 
-func NewTenantConfig() *ConfigManager {
+func NewTenantConfig(done chan bool) *ConfigManager {
 	cm := ConfigManager{
 		exporterEnabled: true,
-		tenantFile:      "/opt/proxy/conf/tenant.yaml",
-		trackFilePath:   "/opt/proxy/track",
+		tenantFile:      "/Users/rodgon/code/personal/go/floki/config/tenants.yaml",
+		trackFilePath:   "/Users/rodgon/code/personal/go/floki/app/track",
 	}
 
 	tenants, err := cm.configFromFile(cm.tenantFile)
@@ -37,9 +37,7 @@ func NewTenantConfig() *ConfigManager {
 	}
 
 	cm.tenantConfig = tenants
-	var done chan bool
 	go cm.ConfigWatcher(done)
-	<-done
 	return &cm
 }
 
@@ -68,7 +66,7 @@ func (c ConfigManager) configFromFile(path string) (JSONConfig, error) {
 }
 
 func (c *ConfigManager) ConfigWatcher(done chan bool) {
-	ticker := time.NewTicker(500 * time.Millisecond)
+	ticker := time.NewTicker(1000 * time.Millisecond)
 	for {
 		select {
 		case <-done:
@@ -77,9 +75,14 @@ func (c *ConfigManager) ConfigWatcher(done chan bool) {
 			if c.configUpdated() {
 				log.Println("Tenant configuration changes detected. Updating local config.")
 				c.updateConfig()
+				c.printConfig()
 			}
 		}
 	}
+}
+
+func (c *ConfigManager) printConfig() {
+	log.Println((*c).tenantConfig)
 }
 
 func (c *ConfigManager) updateConfig() {
@@ -122,7 +125,7 @@ func (c *ConfigManager) configUpdated() bool {
 	}
 
 	if sig != string(t) {
-		storeSignature(c.trackFilePath, f)
+		storeSignature(c.trackFilePath, []byte(sig))
 		return true
 	}
 
@@ -152,7 +155,8 @@ func readFile(path string) ([]byte, error) {
 }
 
 func genSignature(data []byte) string {
-	return hex.EncodeToString(data)
+	sig := md5.Sum(data)
+	return string(sig[:])
 }
 
 func storeSignature(path string, signature []byte) error {
