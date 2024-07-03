@@ -75,14 +75,9 @@ func (c *ConfigManager) ConfigWatcher(done chan bool) {
 			if c.configUpdated() {
 				log.Println("Tenant configuration changes detected. Updating local config.")
 				c.updateConfig()
-				c.printConfig()
 			}
 		}
 	}
-}
-
-func (c *ConfigManager) printConfig() {
-	log.Println((*c).tenantConfig)
 }
 
 func (c *ConfigManager) updateConfig() {

@@ -6,7 +6,6 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/gorilla/mux v1.8.1
 	github.com/prometheus/client_golang v1.19.1
-	github.com/rodolfo-mora/golang-exporter v0.0.2
 )
 
 require (

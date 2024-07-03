@@ -24,14 +24,14 @@ type Floki struct {
 	Config     *ConfigManager
 }
 
-func NewFloki(url string, port string) Floki {
+func NewFloki(url string, port string, done chan bool) Floki {
 	log.Printf("Proxying requests for Loki %s", url)
 
 	return Floki{
 		LokiServer: url,
 		Port:       port,
 		Store:      NewMemoryStore(),
-		Config:     NewTenantConfig(),
+		Config:     NewTenantConfig(done),
 		Exporter:   exporter.NewPrometheusExporter(":3100"),
 	}
 }
@@ -45,7 +45,10 @@ func (f Floki) Start() {
 }
 
 func (f Floki) registerRoutes() {
-	http.HandleFunc("/", f.Handler)
+	log.Println("Starting server")
+
+	http.Handle("/", f.Exporter.Wrapper("/", f.Handler))
+	http.Handle("/metrics", f.Exporter.Export())
 	addr := fmt.Sprintf(":%s", f.Port)
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatal(err)
@@ -63,12 +66,6 @@ func (f Floki) Handler(w http.ResponseWriter, r *http.Request) {
 
 	reverseProxy := httputil.NewSingleHostReverseProxy(lokiUrl)
 	reverseProxy.ServeHTTP(w, r)
-
-	if f.Config.exporterEnabled {
-		log.Println("Exporter enabled")
-		go http.Handle("/metrics", f.Exporter.Wrapper("/"))
-		log.Fatalln(http.ListenAndServe(":3100", nil))
-	}
 }
 
 func (f Floki) UpdateHeaders(r *http.Request, u *url.URL) {
