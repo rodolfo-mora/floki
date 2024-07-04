@@ -1,4 +1,4 @@
-module floki
+module github.com/rodolfo-mora/floki
 
 go 1.21.5
 

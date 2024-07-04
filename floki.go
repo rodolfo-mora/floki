@@ -7,7 +7,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 
-	"floki/pkg/exporter"
+	"github.com/rodolfo-mora/floki/pkg/exporter"
 )
 
 type User struct {
