@@ -17,34 +17,34 @@ type JSONConfig struct {
 	Tenants map[string][]string `json:"tenants"`
 }
 
-type ConfigManager struct {
+type TenantManager struct {
 	exporterEnabled bool
 	tenantFile      string
 	trackFilePath   string
 	tenantConfig    JSONConfig
 }
 
-func NewTenantConfig(done chan bool) *ConfigManager {
-	cm := ConfigManager{
+func NewTenantManager(done chan bool, tenantfile string, trackfile string) *TenantManager {
+	tm := TenantManager{
 		exporterEnabled: true,
-		tenantFile:      "/Users/rodgon/code/personal/go/floki/config/tenants.yaml",
-		trackFilePath:   "/Users/rodgon/code/personal/go/floki/app/track",
+		tenantFile:      tenantfile,
+		trackFilePath:   trackfile,
 	}
 
-	tenants, err := cm.configFromFile(cm.tenantFile)
+	tenants, err := tm.configFromFile(tm.tenantFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	cm.tenantConfig = tenants
-	go cm.ConfigWatcher(done)
-	return &cm
+	tm.tenantConfig = tenants
+	go tm.ConfigWatcher(done)
+	return &tm
 }
 
 /*
 Description
 */
-func (c ConfigManager) configFromFile(path string) (JSONConfig, error) {
+func (t TenantManager) configFromFile(path string) (JSONConfig, error) {
 	var conf JSONConfig
 
 	f, err := readFile(path)
@@ -65,39 +65,39 @@ func (c ConfigManager) configFromFile(path string) (JSONConfig, error) {
 	return conf, nil
 }
 
-func (c *ConfigManager) ConfigWatcher(done chan bool) {
+func (t *TenantManager) ConfigWatcher(done chan bool) {
 	ticker := time.NewTicker(1000 * time.Millisecond)
 	for {
 		select {
 		case <-done:
 			return
 		case <-ticker.C:
-			if c.configUpdated() {
+			if t.configUpdated() {
 				log.Println("Tenant configuration changes detected. Updating local config.")
-				c.updateConfig()
+				t.updateConfig()
 			}
 		}
 	}
 }
 
-func (c *ConfigManager) updateConfig() {
+func (t *TenantManager) updateConfig() {
 	var mux sync.Mutex
 
 	mux.Lock()
 	defer mux.Unlock()
 
-	conf, err := c.configFromFile(c.tenantFile)
+	conf, err := t.configFromFile(t.tenantFile)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	(*c).tenantConfig = JSONConfig{}
-	(*c).tenantConfig = conf
+	(*t).tenantConfig = JSONConfig{}
+	(*t).tenantConfig = conf
 }
 
-func (c *ConfigManager) configUpdated() bool {
-	f, err := readFile(c.tenantFile)
+func (t *TenantManager) configUpdated() bool {
+	f, err := readFile(t.tenantFile)
 	if err != nil {
 		log.Println(err)
 		return false
@@ -108,38 +108,38 @@ func (c *ConfigManager) configUpdated() bool {
 	  If trackfile doesn't exist this might be our first time
 	  executing. We store the signature and return false.
 	*/
-	if !c.trackFileExists() {
-		storeSignature(c.trackFilePath, []byte(sig))
+	if !t.trackFileExists() {
+		storeSignature(t.trackFilePath, []byte(sig))
 		return false
 	}
 
-	t, err := readFile(c.trackFilePath)
+	tf, err := readFile(t.trackFilePath)
 	if err != nil {
 		log.Println(err)
 		return false
 	}
 
-	if sig != string(t) {
-		storeSignature(c.trackFilePath, []byte(sig))
+	if sig != string(tf) {
+		storeSignature(t.trackFilePath, []byte(sig))
 		return true
 	}
 
 	return false
 }
 
-func (c *ConfigManager) trackFileExists() bool {
-	if _, err := os.Stat(c.trackFilePath); errors.Is(err, os.ErrNotExist) {
+func (t *TenantManager) trackFileExists() bool {
+	if _, err := os.Stat(t.trackFilePath); errors.Is(err, os.ErrNotExist) {
 		return false
 	}
 
 	return true
 }
 
-func (c *ConfigManager) getTenants(groups ...string) (string, error) {
+func (t *TenantManager) getTenants(groups ...string) (string, error) {
 	var tenants []string
 
 	for _, group := range groups {
-		tenants = append(tenants, strings.Join(c.tenantConfig.Tenants[group], "|"))
+		tenants = append(tenants, strings.Join(t.tenantConfig.Tenants[group], "|"))
 	}
 
 	return strings.Join(tenants, "|"), nil

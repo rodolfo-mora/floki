@@ -7,6 +7,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 
+	"github.com/rodolfo-mora/floki/pkg/config"
 	"github.com/rodolfo-mora/floki/pkg/exporter"
 )
 
@@ -21,17 +22,18 @@ type Floki struct {
 	APIUrl     string
 	Exporter   exporter.Exporter
 	Store      *MemoryStore
-	Config     *ConfigManager
+	Tenants    *TenantManager
 }
 
 func NewFloki(url string, port string, done chan bool) Floki {
-	log.Printf("Proxying requests for Loki %s", url)
+	c := config.NewConfig()
+	log.Printf("Proxying requests for Loki %s", c.LokiURL)
 
 	return Floki{
-		LokiServer: url,
-		Port:       port,
+		LokiServer: c.LokiURL,
+		Port:       c.ProxyPort,
 		Store:      NewMemoryStore(),
-		Config:     NewTenantConfig(done),
+		Tenants:    NewTenantManager(done, c.TenantFile, c.TrackfilePath),
 		Exporter:   exporter.NewPrometheusExporter(":3100"),
 	}
 }
@@ -83,7 +85,7 @@ func (f Floki) UpdateHeaders(r *http.Request, u *url.URL) {
 
 func (f Floki) GetTenants(user string) (string, error) {
 	groups := f.Store.GetSSOGroups(user)
-	return f.Config.getTenants(groups...)
+	return f.Tenants.getTenants(groups...)
 }
 
 func Unauthorized(w http.ResponseWriter) {
