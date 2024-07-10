@@ -11,6 +11,7 @@ import (
 	"time"
 
 	jsonyaml "github.com/ghodss/yaml"
+	"github.com/rodolfo-mora/floki/pkg/config"
 )
 
 type JSONConfig struct {
@@ -24,11 +25,11 @@ type TenantManager struct {
 	tenantConfig    JSONConfig
 }
 
-func NewTenantManager(done chan bool, tenantfile string, trackfile string) *TenantManager {
+func NewTenantManager(done chan bool, c config.TenantConfig) *TenantManager {
 	tm := TenantManager{
 		exporterEnabled: true,
-		tenantFile:      tenantfile,
-		trackFilePath:   trackfile,
+		tenantFile:      c.TenantFile,
+		trackFilePath:   c.TrackfilePath,
 	}
 
 	tenants, err := tm.configFromFile(tm.tenantFile)
@@ -137,7 +138,6 @@ func (t *TenantManager) trackFileExists() bool {
 
 func (t *TenantManager) getTenants(groups ...string) (string, error) {
 	var tenants []string
-
 	for _, group := range groups {
 		tenants = append(tenants, strings.Join(t.tenantConfig.Tenants[group], "|"))
 	}
@@ -149,6 +149,9 @@ func readFile(path string) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
+// Retreives MD5 hash representation of
+// Receives: []bytes
+// Returns: string
 func genSignature(data []byte) string {
 	sig := md5.Sum(data)
 	return string(sig[:])

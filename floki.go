@@ -33,8 +33,8 @@ func NewFloki(url string, port string, done chan bool) Floki {
 		LokiServer: c.LokiURL,
 		Port:       c.ProxyPort,
 		Store:      NewMemoryStore(),
-		Tenants:    NewTenantManager(done, c.TenantFile, c.TrackfilePath),
-		Exporter:   exporter.NewPrometheusExporter(":3100"),
+		Tenants:    NewTenantManager(done, c.Tenant),
+		Exporter:   exporter.NewPrometheusExporter(c.ExporterPort),
 	}
 }
 
