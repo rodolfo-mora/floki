@@ -24,11 +24,11 @@ func NewConfig() Config {
 		),
 		ProxyPort: getenv(
 			"FLOKI_PROXY_PORT",
-			"8080",
+			":8080",
 		),
 		ExporterPort: getenv(
 			"FLOKI_EXPORTER_PORT",
-			"3100",
+			":3100",
 		),
 		Tenant: TenantConfig{
 			TenantFile: getenv(

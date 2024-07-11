@@ -139,6 +139,9 @@ func (t *TenantManager) trackFileExists() bool {
 func (t *TenantManager) getTenants(groups ...string) (string, error) {
 	var tenants []string
 	for _, group := range groups {
+		// Groups are stored in YAML keys in a file which does not allow
+		// for spaces. We replace spaces for underscores.
+		group = strings.Replace(group, " ", "_", -1)
 		tenants = append(tenants, strings.Join(t.tenantConfig.Tenants[group], "|"))
 	}
 
@@ -150,7 +153,9 @@ func readFile(path string) ([]byte, error) {
 }
 
 // Retreives MD5 hash representation of
+//
 // Receives: []bytes
+//
 // Returns: string
 func genSignature(data []byte) string {
 	sig := md5.Sum(data)
