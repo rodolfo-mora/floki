@@ -152,11 +152,6 @@ func readFile(path string) ([]byte, error) {
 	return os.ReadFile(path)
 }
 
-// Retreives MD5 hash representation of
-//
-// Receives: []bytes
-//
-// Returns: string
 func genSignature(data []byte) string {
 	sig := md5.Sum(data)
 	return string(sig[:])

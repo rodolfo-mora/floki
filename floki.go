@@ -80,6 +80,7 @@ func (f Floki) UpdateHeaders(r *http.Request, u *url.URL) {
 	if err != nil {
 		log.Println(err)
 	}
+
 	(*r).Header.Set("X-Scope-OrgID", tenants)
 }
 
@@ -89,7 +90,13 @@ func (f Floki) GetTenants(user string) (string, error) {
 }
 
 func Unauthorized(w http.ResponseWriter) {
-	err := http.StatusText(http.StatusUnauthorized)
-	code := http.StatusUnauthorized
-	http.Error(w, err, code)
+	setErrorCode(w, http.StatusUnauthorized)
+}
+
+func NotFound(w http.ResponseWriter) {
+	setErrorCode(w, http.StatusNotFound)
+}
+
+func setErrorCode(w http.ResponseWriter, code int) {
+	http.Error(w, http.StatusText(code), code)
 }
