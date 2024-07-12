@@ -1,7 +1,6 @@
 package floki
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -51,19 +50,18 @@ func (f Floki) registerRoutes() {
 
 	http.Handle("/", f.Exporter.Wrapper("/", f.Handler))
 	http.Handle("/metrics", f.Exporter.Export())
-	addr := fmt.Sprintf(":%s", f.Port)
-	if err := http.ListenAndServe(addr, nil); err != nil {
+	if err := http.ListenAndServe(f.Port, nil); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func (f Floki) Handler(w http.ResponseWriter, r *http.Request) {
-	lokiUrl, _ := url.Parse(f.LokiServer)
 	if r.Header.Get("X-Grafana-User") == "" {
 		Unauthorized(w)
 		return
 	}
 
+	lokiUrl, _ := url.Parse(f.LokiServer)
 	f.UpdateHeaders(r, lokiUrl)
 
 	reverseProxy := httputil.NewSingleHostReverseProxy(lokiUrl)
