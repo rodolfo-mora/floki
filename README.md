@@ -124,7 +124,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 Rodolfo Mora Gonzalez - rodolfo.mora.gonzalez@gmail.com
 
-Project Link: [https://github.com/your_username/repo_name](https://github.com/your_username/repo_name)
+Project Link: [https://github.com/rodolfo-mora/floki](https://github.com/rodolfo-mora/floki)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
