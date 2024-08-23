@@ -2,6 +2,7 @@ package floki
 
 import (
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"log"
@@ -53,7 +54,12 @@ func (t TenantManager) configFromFile(path string) (JSONConfig, error) {
 		return conf, err
 	}
 
-	yconf, err := jsonyaml.YAMLToJSON(f)
+	data, err := decrypt(string(f))
+	if err != nil {
+		return conf, err
+	}
+
+	yconf, err := jsonyaml.YAMLToJSON(data)
 	if err != nil {
 		return conf, err
 	}
@@ -159,4 +165,8 @@ func genSignature(data []byte) string {
 
 func storeSignature(path string, signature []byte) error {
 	return os.WriteFile(path, signature, 0660)
+}
+
+func decrypt(data string) ([]byte, error) {
+	return base64.RawStdEncoding.DecodeString(data)
 }
